@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chat — что это и как работает</title>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0e14; --surface: #121722; --surface2: #1b2233;
+    --accent: #7c6bff; --accent2: #00d4c8;
+    --text: #eaeff9; --dim: #8b94a7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1440 0%, #0b2530 100%);
+    padding: 72px 20px 60px; text-align: center;
+  }
+  .hero h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 800; margin-bottom: 12px; }
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--dim); max-width: 640px; margin: 0 auto; font-size: 17px; }
+  .btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 26px; border-radius: 14px; font-size: 16px; font-weight: 600;
+    text-decoration: none; color: #fff; transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,107,255,.35); }
+  .btn-tg { background: linear-gradient(90deg, #2AABEE, #229ED9); }
+  .btn-apk { background: linear-gradient(90deg, var(--accent), #9a8bff); }
+  .btn-web { background: linear-gradient(90deg, var(--accent2), #00b4a8); }
+  .section { max-width: 860px; margin: 0 auto; padding: 48px 20px; }
+  h2 { font-size: 26px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  h2 .n {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    width: 36px; height: 36px; border-radius: 10px; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .card {
+    background: var(--surface); border: 1px solid #1f2740; border-radius: 16px;
+    padding: 24px; margin-bottom: 16px;
+  }
+  .card p { color: var(--dim); margin-bottom: 10px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card b { color: var(--text); }
+  .flow {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;
+    margin: 20px 0;
+  }
+  .flow .step {
+    background: var(--surface2); border-radius: 12px; padding: 12px 18px;
+    font-size: 14px; text-align: center; flex: 1; min-width: 130px;
+    border: 1px solid #2a3350;
+  }
+  .flow .arrow { color: var(--accent2); font-size: 20px; }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .feature {
+    background: var(--surface); border: 1px solid #1f2740; border-radius: 14px; padding: 20px;
+  }
+  .feature .ic { font-size: 28px; margin-bottom: 8px; }
+  .feature h3 { font-size: 16px; margin-bottom: 6px; }
+  .feature p { font-size: 13.5px; color: var(--dim); }
+
+  /* ---------- веб-чат ---------- */
+  #chat-wrap { display: none; }
+  #chat-box {
+    max-width: 760px; margin: 24px auto; background: var(--surface);
+    border: 1px solid #1f2740; border-radius: 18px; overflow: hidden;
+  }
+  #chat-head {
+    padding: 14px 18px; background: var(--surface2);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  #chat-head .dot { width: 10px; height: 10px; border-radius: 50%; background: #f55; display: inline-block; margin-right: 6px; }
+  #chat-head .dot.on { background: #4caf50; }
+  #chat-head select {
+    background: var(--bg); color: var(--text); border: 1px solid #2a3350;
+    border-radius: 8px; padding: 6px 10px; font-size: 13px;
+  }
+  #chat-log { height: 380px; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 78%; padding: 10px 14px; border-radius: 16px; font-size: 14.5px; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: var(--accent); border-bottom-right-radius: 4px; }
+  .msg.ai { align-self: flex-start; background: var(--surface2); border-bottom-left-radius: 4px; }
+  .msg.err { align-self: flex-start; background: #3a1e26; color: #ff8a93; }
+  #chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #1f2740; }
+  #chat-input {
+    flex: 1; background: var(--bg); color: var(--text); border: 1px solid #2a3350;
+    border-radius: 22px; padding: 11px 16px; font-size: 14.5px; outline: none;
+  }
+  #chat-input:focus { border-color: var(--accent); }
+  #chat-send {
+    background: var(--accent); color: #fff; border: none; border-radius: 50%;
+    width: 44px; height: 44px; font-size: 17px; cursor: pointer;
+  }
+  .hint { color: var(--dim); font-size: 13px; text-align: center; margin-top: 8px; }
+  footer { text-align: center; color: var(--dim); font-size: 13px; padding: 32px 20px 48px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>💬 <span>AI Chat</span> — твой умный собеседник</h1>
+  <p>Локальный чат-ИИ на моделях Qwen и Gemma 2. Работает с телефона, из Telegram и прямо с этого сайта — без регистрации.</p>
+  <div class="btns">
+    <a class="btn btn-tg" href="https://t.me/local_ai_pk_bot" target="_blank">✈️ Зайти в Telegram-бота</a>
+    <a class="btn btn-apk" href="AI-Chat.apk" download>📱 Скачать Android-приложение</a>
+    <a class="btn btn-web" href="#" onclick="toggleChat(); return false;">🌐 Писать с веб-сайта</a>
+  </div>
+</div>
+
+<div class="section">
+  <h2><span class="n">1</span> Что такое чат-ИИ?</h2>
+  <div class="card">
+    <p><b>Чат-ИИ</b> — это программа, с которой можно разговаривать обычным языком, как с человеком. Ты пишешь сообщение — она понимает вопрос и генерирует ответ.</p>
+    <p>Внутри — <b>языковая модель</b>: нейросеть, обученная на огромном количестве текстов. Она не ищет ответ в базе, а <b>сочиняет его по одному слову за раз</b>, каждый раз выбирая наиболее подходящее продолжение.</p>
+    <p>В нашем случае модели — <b>Qwen</b> и <b>Gemma 2</b> — работают на домашнем компьютере через <b>Ollama</b>, поэтому общение бесплатное и приватное: твои сообщения не уходят в большие корпорации.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h2><span class="n">2</span> Как это работает?</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step">✍️ Ты пишешь<br><small style="color:var(--dim)">сообщение</small></div>
+      <div class="arrow">→</div>
+      <div class="step">✂️ Текст режется<br><small style="color:var(--dim)">на токены</small></div>
+      <div class="arrow">→</div>
+      <div class="step">🧠 Модель думает<br><small style="color:var(--dim)">Qwen / Gemma 2</small></div>
+      <div class="arrow">→</div>
+      <div class="step">💬 Ответ приходит<br><small style="color:var(--dim)">по кусочкам (стриминг)</small></div>
+    </div>
+    <p><b>Токены</b> — это кусочки слов (примерно 3–4 символа). Модель предсказывает следующий токен на основе всех предыдущих — поэтому ответ и появляется постепенно, слово за словом.</p>
+    <p><b>Контекст</b> — «память» диалога. Модель видит предыдущие сообщения переписки, поэтому помнит, о чём вы говорили. Начинаешь новый чат — память обнуляется.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h2><span class="n">3</span> Способы общения</h2>
+  <div class="feature-grid">
+    <div class="feature">
+      <div class="ic">📱</div>
+      <h3>Android-приложение</h3>
+      <p>Красивый тёмный интерфейс, чаты, распознавание текста с фото (до 5 штук), выбор модели и стриминг ответов.</p>
+    </div>
+    <div class="feature">
+      <div class="ic">✈️</div>
+      <h3>Telegram-бот</h3>
+      <p>Тот же ИИ прямо в Telegram: кнопочное меню, работа в группах, оповещения о включении сервера.</p>
+    </div>
+    <div class="feature">
+      <div class="ic">🌐</div>
+      <h3>Этот сайт</h3>
+      <p>Чат прямо здесь — без установки чего-либо. Работает в любом браузере на телефоне и компьютере.</p>
+    </div>
+    <div class="feature">
+      <div class="ic">🔒</div>
+      <h3>Приватность</h3>
+      <p>Модели работают локально на своём ПК. Лимит: 20 запросов в минуту для всех пользователей.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="chat-wrap">
+  <h2><span class="n">💬</span> Веб-чат</h2>
+  <div id="chat-box">
+    <div id="chat-head">
+      <span><span class="dot" id="status-dot"></span><span id="status-text">подключение…</span></span>
+      <select id="model-select"><option>qwen2.5:1.5b</option><option>gemma2:2b-instruct-q4_K_M</option></select>
+    </div>
+    <div id="chat-log"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" placeholder="Напишите сообщение…" autocomplete="off">
+      <button id="chat-send">➤</button>
+    </div>
+  </div>
+  <p class="hint">Чат работает, когда на компьютере запущен сервер (start_server.bat). Обучалку выше можно читать всегда.</p>
+</div>
+
+<footer>AI Chat · локальные модели Qwen и Gemma 2 · Ollama · бесплатно и приватно</footer>
+
+<script>
+const KEY = 'x7q92kd';
+const TOPIC_REQ = 'mka/aichat/' + KEY + '/req';
+const TOPIC_RES = 'mka/aichat/' + KEY + '/res';
+const TOPIC_ADMIN = 'mka/aichat/' + KEY + '/admin';
+const device = 'WEB:' + (Math.random().toString(36).slice(2, 8));
+let client = null, connected = false, busy = false, history = [], locked = [];
+
+function toggleChat() {
+  const w = document.getElementById('chat-wrap');
+  w.style.display = w.style.display === 'block' ? 'none' : 'block';
+  if (w.style.display === 'block' && !client) connect();
+  w.scrollIntoView({ behavior: 'smooth' });
+}
+
+function setStatus(on, text) {
+  document.getElementById('status-dot').className = 'dot' + (on ? ' on' : '');
+  document.getElementById('status-text').textContent = text;
+}
+
+function connect() {
+  setStatus(false, 'подключение…');
+  client = mqtt.connect('wss://broker.emqx.io:8083/mqtt', { clientId: 'aichat-web-' + Math.random().toString(16).slice(2) });
+  client.on('connect', () => {
+    connected = true; setStatus(true, 'сервер подключён');
+    client.subscribe(TOPIC_RES);
+    client.subscribe(TOPIC_ADMIN);
+    client.publish(TOPIC_REQ, JSON.stringify({ id: rid(), action: 'models', device }));
+  });
+  client.on('reconnect', () => setStatus(false, 'переподключение…'));
+  client.on('close', () => { connected = false; setStatus(false, 'нет связи'); });
+  client.on('message', (topic, payload) => {
+    const msg = JSON.parse(payload.toString());
+    if (topic === TOPIC_ADMIN) {
+      if (msg.status === 'stopped') setStatus(true, 'сервер отключён администратором (103)');
+      else if (msg.code === 51) setStatus(false, 'сервер экстренно отключён (51)');
+      else setStatus(true, 'сервер подключён');
+      if (Array.isArray(msg.locked_models)) locked = msg.locked_models;
+      return;
+    }
+    handleRes(msg);
+  });
+}
+
+function rid() { return crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now() + Math.random(); }
+
+let pendingId = null, aiBubble = null, aiText = '';
+
+function handleRes(m) {
+  if (m.id === pendingId) {
+    if (m.chunk) { aiText += m.chunk; aiBubble.textContent = aiText; scrollLog(); }
+    if (m.error) {
+      const code = m.code || '';
+      const map = { 51: 'сервер был экстренно отключён', 103: 'сервер отключён', 1001: 'сервер работает нестабильно', 429: '' };
+      aiBubble.className = 'msg err';
+      aiBubble.textContent = (code ? ('Ошибка ' + code + ' — ') : '') + (map[code] ? map[code] + '. ' : '') + m.error;
+      busy = false; pendingId = null;
+    }
+    if (m.done) { busy = false; pendingId = null; if (aiText) history.push({ role: 'assistant', content: aiText }); }
+    return;
+  }
+  if (m.models) {
+    const sel = document.getElementById('model-select');
+    sel.innerHTML = '';
+    m.models.forEach(name => {
+      const o = document.createElement('option');
+      o.value = o.textContent = name;
+      if (Array.isArray(m.locked) && m.locked.includes(name)) o.textContent = name + ' 🔒';
+      sel.appendChild(o);
+    });
+  }
+}
+
+function addMsg(cls, text) {
+  const log = document.getElementById('chat-log');
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls; d.textContent = text;
+  log.appendChild(d); scrollLog(); return d;
+}
+function scrollLog() { const l = document.getElementById('chat-log'); l.scrollTop = l.scrollHeight; }
+
+function send() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || busy || !connected) return;
+  const model = document.getElementById('model-select').value;
+  if (locked.includes(model)) { addMsg('err', '⛔ Данная модель заблокирована администратором.'); return; }
+  input.value = '';
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  aiBubble = addMsg('ai', '…'); aiText = ''; busy = true;
+  pendingId = rid();
+  client.publish(TOPIC_REQ, JSON.stringify({
+    id: pendingId, action: 'chat', model, device,
+    messages: history.slice(-16)
+  }));
+}
+
+document.getElementById('chat-send').onclick = send;
+document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+</script>
+</body>
+</html>
