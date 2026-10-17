@@ -1,7 +1,7 @@
 {
   "name": "AI Chat — локальный ИИ в твоём кармане",
   "short_name": "AI Chat",
-  "description": "Чат-ИИ на локальных моделях Qwen и Gemma 2: Android, Telegram, ПК. Продукт CatCode / OuRi.",
+  "description": "Чат-ИИ на локальных моделях Qwen и Gemma 2: Android, Telegram, ПК. Продукт OuRi.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

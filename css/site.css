@@ -11,6 +11,7 @@
   font-size:.82rem; margin-bottom:26px;
 }
 .badge i{ width:8px; height:8px; border-radius:50%; background:var(--text); animation:ping 2.4s var(--ease-out) infinite }
+.badge i.badge__dot--maybe{ background:var(--muted); animation:none; box-shadow:none }
 @keyframes ping{ 0%{box-shadow:0 0 0 0 rgba(255,255,255,.35)} 70%{box-shadow:0 0 0 9px rgba(255,255,255,0)} 100%{box-shadow:0 0 0 0 rgba(255,255,255,0)} }
 .hero .h1 em{
   font-style:normal; display:inline-block; background:var(--text); color:var(--bg);
