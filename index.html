@@ -1,242 +1,295 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Chat — локальный ИИ в твоём кармане</title>
-<style>
-  :root {
-    --bg: #07090f; --surface: #0e1320; --surface2: #161d2f; --line: #202a45;
-    --accent: #7c6bff; --accent2: #00e5cf; --text: #f2f5fc; --dim: #94a0b8;
-    --glow: 0 0 60px rgba(124,107,255,.35);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.7;
-    overflow-x: hidden;
-  }
-  /* фоновые светящиеся орбы */
-  .orb { position: fixed; border-radius: 50%; filter: blur(120px); opacity: .35; z-index: -1; animation: float 14s ease-in-out infinite; }
-  .orb1 { width: 480px; height: 480px; background: #5b3dff; top: -160px; left: -120px; }
-  .orb2 { width: 420px; height: 420px; background: #00b3a4; bottom: -140px; right: -100px; animation-delay: -7s; }
-  @keyframes float { 50% { transform: translateY(60px) scale(1.08); } }
-
-  nav {
-    position: sticky; top: 0; z-index: 50;
-    backdrop-filter: blur(18px); background: rgba(7,9,15,.72);
-    border-bottom: 1px solid var(--line);
-  }
-  .nav-in { max-width: 1160px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
-  .logo .dot {
-    width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
-    background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: var(--glow);
-  }
-  .nav-links { display: flex; gap: 26px; }
-  .nav-links a { color: var(--dim); text-decoration: none; font-size: 14.5px; transition: color .2s; }
-  .nav-links a:hover { color: var(--text); }
-  @media (max-width: 720px) { .nav-links { display: none; } }
-
-  .hero { max-width: 1160px; margin: 0 auto; padding: 96px 24px 64px; text-align: center; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--surface); color: var(--accent2); font-size: 13px; margin-bottom: 26px;
-  }
-  .badge i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 12px var(--accent2); }
-  .hero h1 { font-size: clamp(34px, 6.4vw, 64px); font-weight: 900; line-height: 1.12; letter-spacing: -.02em; }
-  .hero h1 span {
-    background: linear-gradient(92deg, var(--accent) 10%, var(--accent2) 90%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .hero p { color: var(--dim); max-width: 620px; margin: 22px auto 0; font-size: clamp(15px, 2vw, 18px); }
-  .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 38px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 10px; padding: 15px 30px;
-    border-radius: 16px; font-size: 15.5px; font-weight: 700; text-decoration: none; color: #fff;
-    transition: transform .18s, box-shadow .18s; position: relative; overflow: hidden;
-  }
-  .btn:hover { transform: translateY(-3px); }
-  .btn-tg { background: linear-gradient(95deg, #2AABEE, #1c8ac4); box-shadow: 0 10px 34px rgba(42,171,238,.35); }
-  .btn-apk { background: linear-gradient(95deg, var(--accent), #a08bff); box-shadow: 0 10px 34px rgba(124,107,255,.4); }
-  .btn-exe { background: linear-gradient(95deg, #00c2ae, var(--accent2)); box-shadow: 0 10px 34px rgba(0,229,207,.3); }
-  .btn-ghost { background: var(--surface); border: 1px solid var(--line); color: var(--text); }
-
-  .section { max-width: 1160px; margin: 0 auto; padding: 84px 24px 0; }
-  .kicker { color: var(--accent2); font-size: 13px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
-  .section h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 900; margin: 10px 0 14px; letter-spacing: -.01em; }
-  .lead { color: var(--dim); max-width: 660px; font-size: 16px; }
-
-  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 40px; }
-  .step {
-    background: linear-gradient(180deg, var(--surface), rgba(14,19,32,.4));
-    border: 1px solid var(--line); border-radius: 20px; padding: 26px; position: relative;
-    transition: transform .2s, border-color .2s;
-  }
-  .step:hover { transform: translateY(-4px); border-color: #33406b; }
-  .step .num {
-    width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
-    font-weight: 900; font-size: 17px; margin-bottom: 16px; color: #fff;
-    background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: var(--glow);
-  }
-  .step h3 { font-size: 17px; margin-bottom: 8px; }
-  .step p { color: var(--dim); font-size: 14px; }
-
-  /* галерея скриншотов */
-  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 22px; margin-top: 44px; }
-  .shot { perspective: 900px; }
-  .phone {
-    background: #05070c; border: 2px solid #26304f; border-radius: 30px; padding: 10px;
-    transition: transform .35s, box-shadow .35s; box-shadow: 0 24px 60px rgba(0,0,0,.55);
-  }
-  .shot:hover .phone { transform: rotateY(-7deg) rotateX(4deg) translateY(-6px); box-shadow: 0 30px 70px rgba(91,61,255,.35); }
-  .phone img { width: 100%; border-radius: 21px; display: block; }
-  .shot figcaption { text-align: center; color: var(--dim); font-size: 13.5px; margin-top: 12px; }
-
-  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 40px; }
-  .feature { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 26px; transition: transform .2s, border-color .2s; }
-  .feature:hover { transform: translateY(-4px); border-color: #33406b; }
-  .feature .ic { font-size: 30px; margin-bottom: 12px; }
-  .feature h3 { font-size: 16.5px; margin-bottom: 8px; }
-  .feature p { color: var(--dim); font-size: 14px; }
-
-  .qa { margin-top: 40px; }
-  details { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px 24px; margin-bottom: 12px; }
-  details summary { cursor: pointer; font-weight: 700; font-size: 15.5px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-  details summary::after { content: '+'; color: var(--accent); font-size: 22px; font-weight: 400; transition: transform .2s; }
-  details[open] summary::after { transform: rotate(45deg); }
-  details p { color: var(--dim); margin-top: 12px; font-size: 14.5px; }
-
-  .final { text-align: center; padding: 100px 24px 60px; }
-  .final h2 { font-size: clamp(26px, 4.4vw, 42px); font-weight: 900; }
-  footer { text-align: center; color: var(--dim); font-size: 13px; padding: 40px 20px 56px; border-top: 1px solid var(--line); margin-top: 70px; }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Chat — локальный ИИ в твоём кармане · CatCode</title>
+<meta name="description" content="AI Chat от CatCode: чат-ИИ на локальных моделях Qwen и Gemma 2. Android-приложение, Telegram-бот и программа для ПК. Без регистрации, без подписок, приватно.">
+<meta name="theme-color" content="#08080a">
+<meta name="color-scheme" content="dark light">
+<link rel="canonical" href="https://spaj7468-cell.github.io/ai-chat-site/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CatCode · OuRi Corp">
+<meta property="og:title" content="AI Chat — локальный ИИ в твоём кармане">
+<meta property="og:description" content="Android-приложение, Telegram-бот и программа для ПК на локальных моделях Qwen и Gemma 2. Без регистрации и подписок.">
+<meta property="og:url" content="https://spaj7468-cell.github.io/ai-chat-site/">
+<meta property="og:image" content="https://spaj7468-cell.github.io/ai-chat-site/assets/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="AI Chat — локальный ИИ в твоём кармане">
+<meta name="twitter:description" content="Чат-ИИ на твоём железе: Android, Telegram, ПК. Приватно и бесплатно.">
+<meta name="twitter:image" content="https://spaj7468-cell.github.io/ai-chat-site/assets/icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap"></noscript>
+<link rel="stylesheet" href="css/qkc-core.css">
+<link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-<div class="orb orb1"></div><div class="orb orb2"></div>
 
-<nav>
-  <div class="nav-in">
-    <div class="logo"><img src="img/logo.png" style="width:34px;height:34px;border-radius:10px" alt="CatCode"> AI Chat <span style="color:var(--dim);font-weight:400;font-size:13px">by CatCode</span></div>
-    <div class="nav-links">
-      <a href="#how">Как работает</a>
-      <a href="#gallery">Скриншоты</a>
-      <a href="#ways">Способы</a>
-      <a href="#about">О компании</a>
-      <a href="#faq">FAQ</a>
+<div class="grid-overlay" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="scroll-progress" aria-hidden="true"><i id="scrollBar"></i></div>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="nav" id="nav">
+  <div class="nav__in">
+    <a class="brand" href="#top" aria-label="AI Chat, на главную">
+      <img src="img/logo.png" alt="" width="34" height="34" decoding="async" class="brand__logo">
+      <span class="brand__name">AI Chat</span>
+      <span class="brand__sub">by CatCode</span>
+    </a>
+    <nav class="nav__links" id="navLinks" aria-label="Основная навигация">
+      <a class="nav__link" href="#how">Как работает</a>
+      <a class="nav__link" href="#gallery">Скриншоты</a>
+      <a class="nav__link" href="#ways">Способы</a>
+      <a class="nav__link" href="#about">О компании</a>
+      <a class="nav__link" href="#faq">FAQ</a>
+    </nav>
+    <div class="nav__right">
+      <button class="icon-btn" id="btnTheme" title="Тема" aria-label="Переключить тему" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button class="icon-btn nav__burger" id="btnBurger" aria-label="Меню" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.8" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
     </div>
-  </div>
-</nav>
-
-<header class="hero">
-  <div class="badge"><i></i> Сервер работает · Qwen и Gemma 2 · бесплатно</div>
-  <h1>Локальный ИИ<br><span>в твоём кармане</span></h1>
-  <p>Чат-ИИ, который работает на домашнем компьютере: приложение для Android, бот в Telegram и программа для ПК. Без регистрации, без подписок, приватно.</p>
-  <div class="cta">
-    <a class="btn btn-tg" href="https://t.me/local_ai_pk_bot" target="_blank">✈️ Telegram-бот</a>
-    <a class="btn btn-apk" href="AI-Chat.apk" download>📱 Android APK</a>
-    <a class="btn btn-exe" href="AI-Chat-Setup.exe" download>🖥️ Программа для ПК</a>
   </div>
 </header>
 
-<section class="section" id="how">
-  <div class="kicker">Обучалка</div>
-  <h2>Что такое чат-ИИ и как он работает</h2>
-  <p class="lead">Чат-ИИ — программа, с которой можно разговаривать обычным языком. Внутри — языковая модель: нейросеть, обученная на огромном количестве текстов.</p>
-  <div class="steps">
-    <div class="step"><div class="num">1</div><h3>✍️ Ты пишешь</h3><p>Сообщение уходит на сервер, где его встречает модель — Qwen или Gemma 2 на твоём ПК.</p></div>
-    <div class="step"><div class="num">2</div><h3>✂️ Токены</h3><p>Текст режется на кусочки-токены (~3–4 символа). Модель видит весь диалог целиком.</p></div>
-    <div class="step"><div class="num">3</div><h3>🧠 Генерация</h3><p>Модель предсказывает следующий токен снова и снова — так рождается ответ.</p></div>
-    <div class="step"><div class="num">4</div><h3>⚡ Стриминг</h3><p>Ответ летит к тебе по кусочкам ещё во время генерации — видно, как текст «печатается».</p></div>
-  </div>
-</section>
+<main id="main">
 
-<section class="section" id="gallery">
-  <div class="kicker">Живые скриншоты</div>
-  <h2>Так это выглядит</h2>
-  <p class="lead">Реальные скриншоты приложения и Telegram-бота: тёмная тема, стриминг, распознавание текста с фото, бургер-меню.</p>
-  <div class="shots">
-    <figure class="shot"><div class="phone"><img src="img/app1.jpg" alt="Приложение — главный экран" loading="lazy"></div><figcaption>📱 Главный экран приложения</figcaption></figure>
-    <figure class="shot"><div class="phone"><img src="img/app2.jpg" alt="Меню и модели" loading="lazy"></div><figcaption>☰ Бургер-меню и выбор модели</figcaption></figure>
-    <figure class="shot"><div class="phone"><img src="img/app3.jpg" alt="Диалог с ИИ" loading="lazy"></div><figcaption>💬 Диалог со стримингом ответа</figcaption></figure>
-    <figure class="shot"><div class="phone"><img src="img/app4.jpg" alt="Распознавание фото" loading="lazy"></div><figcaption>📸 ИИ читает текст с фото</figcaption></figure>
-    <figure class="shot"><div class="phone"><img src="img/tg1.jpg" alt="Телеграм бот" loading="lazy"></div><figcaption>✈️ Бот в Telegram — меню-кнопки</figcaption></figure>
-    <figure class="shot"><div class="phone"><img src="img/tg2.jpg" alt="Телеграм бот диалог" loading="lazy"></div><figcaption>✈️ Общение прямо в Telegram</figcaption></figure>
-  </div>
-</section>
+  <!-- ════════ hero ════════ -->
+  <section class="hero" id="top">
+    <span class="badge reveal"><i aria-hidden="true"></i> Сервер работает · Qwen и Gemma 2 · бесплатно</span>
+    <h1 class="h1 reveal">Локальный ИИ<br><em>в твоём кармане</em></h1>
+    <p class="lead reveal">Чат-ИИ, который работает на домашнем компьютере: приложение для Android,
+      бот в Telegram и программа для ПК. Без регистрации, без подписок, приватно.</p>
+    <div class="cta reveal">
+      <a class="btn btn--primary btn--lg" href="https://t.me/local_ai_pk_bot" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M21 4 3.6 10.6c-.8.3-.8 1.4 0 1.7l4.2 1.5 1.6 4.6c.3.8 1.3.9 1.8.3l2.2-2.6 4.3 3.2c.7.5 1.6.1 1.8-.7L22 5.2c.2-.9-.6-1.6-1-1.2Z"/><path d="m8 13.6 9.5-7.4"/></svg>
+        Telegram-бот
+      </a>
+      <a class="btn btn--ghost btn--lg" href="AI-Chat.apk" download>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>
+        Android APK
+      </a>
+      <a class="btn btn--ghost btn--lg" href="AI-Chat-Setup.exe" download>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg>
+        Программа для ПК
+      </a>
+    </div>
+  </section>
 
-<section class="section" id="ways">
-  <div class="kicker">Три способа</div>
-  <h2>Общайся откуда угодно</h2>
-  <div class="feature-grid">
-    <div class="feature"><div class="ic">📱</div><h3>Android-приложение</h3><p>Шикарный тёмный интерфейс, список чатов, до 5 фото с распознаванием текста, выбор модели, анимации. Скачивается одним файлом APK.</p></div>
-    <div class="feature"><div class="ic">✈️</div><h3>Telegram-бот</h3><p>Пиши <b>/запрос</b> и свой вопрос — ИИ ответит прямо в Telegram. Работает в группах, есть кнопочное меню и оповещения о сервере.</p></div>
-    <div class="feature"><div class="ic">🖥️</div><h3>Программа для ПК</h3><p>Всё то же, но ещё красивее: два режима — обычный ИИ и ИИ-создатель сайтов со встроенным мини-браузером.</p></div>
-    <div class="feature"><div class="ic">🔒</div><h3>Приватность</h3><p>Модели крутятся локально на домашнем ПК. Ничего не уходит в облака. Лимит — 20 запросов в минуту для всех.</p></div>
-  </div>
-</section>
-
-<section class="section" id="about">
-  <div class="kicker">О компании</div>
-  <h2>CatCode — создаём умное и красивое</h2>
-  <div style="display:flex;gap:36px;align-items:flex-start;margin-top:32px;flex-wrap:wrap">
-    <img src="img/logo.png" alt="CatCode" style="width:150px;height:150px;border-radius:38px;box-shadow:0 20px 60px rgba(124,107,255,.4);flex-shrink:0">
-    <div style="flex:1;min-width:280px">
-      <p class="lead"><b style="color:var(--text)">CatCode</b> — небольшая технологическая компания, которая делает искусственный интеллект доступным каждому. Мы верим, что умные помощники не должны требовать подписок, регистрации и отправки данных в чужие облака.</p>
-      <p class="lead" style="margin-top:12px">Наш флагман — экосистема AI Chat: Android-приложение, программа для ПК и Telegram-бот, работающие на локальных моделях Qwen и Gemma 2 через собственный сервер пользователя. Приватность, скорость и красивый интерфейс — в каждом пикселе.</p>
-      <p class="lead" style="margin-top:12px">Разрабатываем и поддерживаем всё сами: от дизайна до серверной части. Каждый день улучшаем продукт и слушаем пользователей.</p>
-      <div style="margin-top:22px;padding:16px 20px;border:1px solid var(--line);border-radius:16px;background:var(--surface);display:inline-block">
-        <div style="font-size:13px;color:var(--dim)">Связь по любым вопросам:</div>
-        <a href="mailto:juravlev.aleksandr2020@gmail.com" style="color:var(--accent2);font-weight:700;text-decoration:none;font-size:15px">✉️ juravlev.aleksandr2020@gmail.com</a>
+  <!-- ════════ как работает ════════ -->
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="block__head reveal">
+        <span class="kicker">Обучалка</span>
+        <h2 class="h2">Что такое чат-ИИ и как он работает</h2>
+        <p class="lead">Чат-ИИ — программа, с которой можно разговаривать обычным языком.
+          Внутри — языковая модель: нейросеть, обученная на огромном количестве текстов.</p>
+      </div>
+      <div class="steps">
+        <article class="step reveal">
+          <span class="step__num num">01</span>
+          <span class="step__ico"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="m14 6 3 3"/></svg></span>
+          <h3>Ты пишешь</h3>
+          <p>Сообщение уходит на сервер, где его встречает модель — Qwen или Gemma 2 на твоём ПК.</p>
+        </article>
+        <article class="step reveal">
+          <span class="step__num num">02</span>
+          <span class="step__ico"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.2 7.6 20 18M8.2 16.4 20 6"/></svg></span>
+          <h3>Токены</h3>
+          <p>Текст режется на кусочки-токены (~3–4 символа). Модель видит весь диалог целиком.</p>
+        </article>
+        <article class="step reveal">
+          <span class="step__num num">03</span>
+          <span class="step__ico"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 4a4 4 0 0 0-4 4c0 1 .3 1.7-.6 2.6A4.4 4.4 0 0 0 8.6 18H15a4.3 4.3 0 0 0 1.6-7.4c-.9-.9-.6-1.6-.6-2.6a4 4 0 0 0-4-4Z"/><path d="M10 21h4"/></svg></span>
+          <h3>Генерация</h3>
+          <p>Модель предсказывает следующий токен снова и снова — так рождается ответ.</p>
+        </article>
+        <article class="step reveal">
+          <span class="step__num num">04</span>
+          <span class="step__ico"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg></span>
+          <h3>Стриминг</h3>
+          <p>Ответ летит по кусочкам ещё во время генерации — видно, как текст «печатается».</p>
+        </article>
       </div>
     </div>
+  </section>
+
+  <!-- ════════ скриншоты ════════ -->
+  <section class="section" id="gallery">
+    <div class="wrap">
+      <div class="block__head reveal">
+        <span class="kicker">Живые скриншоты</span>
+        <h2 class="h2">Так это выглядит</h2>
+        <p class="lead">Реальные скриншоты приложения и Telegram-бота: тёмная тема, стриминг,
+          распознавание текста с фото, бургер-меню.</p>
+      </div>
+      <div class="shots">
+        <figure class="shot reveal"><div class="phone"><img src="img/app1.jpg" alt="Приложение — главный экран" loading="lazy" width="640" height="1280"></div><figcaption>Главный экран приложения</figcaption></figure>
+        <figure class="shot reveal"><div class="phone"><img src="img/app2.jpg" alt="Меню и выбор модели" loading="lazy" width="640" height="1280"></div><figcaption>Бургер-меню и выбор модели</figcaption></figure>
+        <figure class="shot reveal"><div class="phone"><img src="img/app3.jpg" alt="Диалог с ИИ со стримингом" loading="lazy" width="640" height="1280"></div><figcaption>Диалог со стримингом ответа</figcaption></figure>
+        <figure class="shot reveal"><div class="phone"><img src="img/app4.jpg" alt="Распознавание текста с фото" loading="lazy" width="640" height="1280"></div><figcaption>ИИ читает текст с фото</figcaption></figure>
+        <figure class="shot reveal"><div class="phone"><img src="img/tg1.jpg" alt="Telegram-бот, меню-кнопки" loading="lazy" width="640" height="1280"></div><figcaption>Бот в Telegram — меню-кнопки</figcaption></figure>
+        <figure class="shot reveal"><div class="phone"><img src="img/tg2.jpg" alt="Общение в Telegram" loading="lazy" width="640" height="1280"></div><figcaption>Общение прямо в Telegram</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ способы ════════ -->
+  <section class="section" id="ways">
+    <div class="wrap">
+      <div class="block__head reveal">
+        <span class="kicker">Три способа</span>
+        <h2 class="h2">Общайся откуда угодно</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature reveal">
+          <span class="feature__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+          <h3>Android-приложение</h3>
+          <p>Тёмный интерфейс, список чатов, до 5 фото с распознаванием текста, выбор модели,
+            анимации. Скачивается одним файлом APK.</p>
+        </article>
+        <article class="feature reveal">
+          <span class="feature__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M21 4 3.6 10.6c-.8.3-.8 1.4 0 1.7l4.2 1.5 1.6 4.6c.3.8 1.3.9 1.8.3l2.2-2.6 4.3 3.2c.7.5 1.6.1 1.8-.7L22 5.2c.2-.9-.6-1.6-1-1.2Z"/></svg></span>
+          <h3>Telegram-бот</h3>
+          <p>Пиши <b>/запрос</b> и свой вопрос — ИИ ответит прямо в Telegram.
+            Работает в группах, есть кнопочное меню и оповещения о сервере.</p>
+        </article>
+        <article class="feature reveal">
+          <span class="feature__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg></span>
+          <h3>Программа для ПК</h3>
+          <p>Всё то же, но ещё красивее: два режима — обычный ИИ и ИИ-создатель сайтов
+            со встроенным мини-браузером.</p>
+        </article>
+        <article class="feature reveal">
+          <span class="feature__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <h3>Приватность</h3>
+          <p>Модели крутятся локально на домашнем ПК. Ничего не уходит в облака.
+            Лимит — 20 запросов в минуту для всех.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ о компании ════════ -->
+  <section class="section" id="about">
+    <div class="wrap">
+      <div class="block__head reveal">
+        <span class="kicker">О компании</span>
+        <h2 class="h2">CatCode — создаём умное и красивое</h2>
+      </div>
+      <div class="about reveal">
+        <img src="img/logo.png" alt="Логотип CatCode" width="150" height="150" class="about__logo">
+        <div class="about__txt">
+          <p class="lead"><b>CatCode</b> — небольшая технологическая компания, которая делает
+            искусственный интеллект доступным каждому. Мы верим, что умные помощники не должны
+            требовать подписок, регистрации и отправки данных в чужие облака.</p>
+          <p class="lead">Наш флагман — экосистема AI Chat: Android-приложение, программа для ПК
+            и Telegram-бот, работающие на локальных моделях Qwen и Gemma 2 через собственный сервер
+            пользователя. Приватность, скорость и красивый интерфейс — в каждом пикселе.</p>
+          <p class="lead">Разрабатываем и поддерживаем всё сами: от дизайна до серверной части.
+            Каждый день улучшаем продукт и слушаем пользователей.</p>
+          <div class="contact">
+            <span class="muted sm">Связь по любым вопросам:</span>
+            <a href="mailto:juravlev.aleksandr2020@gmail.com">juravlev.aleksandr2020@gmail.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FAQ ════════ -->
+  <section class="section" id="faq">
+    <div class="wrap wrap--narrow">
+      <div class="block__head reveal">
+        <span class="kicker">FAQ</span>
+        <h2 class="h2">Частые вопросы</h2>
+      </div>
+      <div class="qa reveal">
+        <details open>
+          <summary>Сайт работает, когда сервер выключен?</summary>
+          <p>Да! Сам сайт, обучалка и все материалы доступны всегда. А вот чат (в приложении, боте
+            или на ПК) отвечает только когда на компьютере запущен start_server.bat — тогда
+            приложения подключаются автоматически.</p>
+        </details>
+        <details>
+          <summary>Что такое токены и контекст?</summary>
+          <p>Токен — кусочек слова (3–4 символа), из которых модель собирает ответ.
+            Контекст — «память» диалога: модель видит предыдущие сообщения. Новый чат = чистая память.</p>
+        </details>
+        <details>
+          <summary>Почему иногда ответ не приходит?</summary>
+          <p>Если сервер выключен — приложение покажет код ошибки: 404 (нет интернета),
+            1001 (сервер нестабилен), 103 (отключён админом), 51 (экстренно закрыт разработчиком).
+            Запусти start_server.bat — всё оживёт.</p>
+        </details>
+        <details>
+          <summary>Это бесплатно?</summary>
+          <p>Полностью. Модели open-source и работают на твоём железе.
+            Никаких подписок и отправки данных в облако.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ финал ════════ -->
+  <section class="final">
+    <div class="wrap">
+      <h2 class="h2 reveal">Готов попробовать?</h2>
+      <p class="lead reveal" style="margin:14px auto 0">Выбирай любой способ — везде один и тот же умный ИИ.</p>
+      <div class="cta reveal">
+        <a class="btn btn--primary" href="https://t.me/local_ai_pk_bot" target="_blank" rel="noopener">Открыть бота</a>
+        <a class="btn btn--ghost" href="AI-Chat.apk" download>Скачать APK</a>
+        <a class="btn btn--ghost" href="AI-Chat-Setup.exe" download>Скачать для ПК</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot__in">
+    <span>Created by <b>CatCode</b> © <span data-year>2026</span> · локальные модели Qwen и Gemma 2</span>
+    <a href="mailto:juravlev.aleksandr2020@gmail.com">juravlev.aleksandr2020@gmail.com</a>
   </div>
-</section>
-
-<section class="section" id="faq">
-  <div class="kicker">FAQ</div>
-  <h2>Частые вопросы</h2>
-  <div class="qa">
-    <details open><summary>Сайт работает, когда сервер выключен?</summary><p>Да! Сам сайт, обучалка и все материалы доступны всегда. А вот чат (в приложении, боте или на ПК) отвечает только когда на компьютере запущен start_server.bat — тогда приложения подключаются автоматически.</p></details>
-    <details><summary>Что такое токены и контекст?</summary><p>Токен — кусочек слова (3–4 символа), из которых модель собирает ответ. Контекст — «память» диалога: модель видит предыдущие сообщения. Новый чат = чистая память.</p></details>
-    <details><summary>Почему иногда ответ не приходит?</summary><p>Если сервер выключен — приложение покажет код ошибки: 404 (нет интернета), 1001 (сервер нестабилен), 103 (отключён админом), 51 (экстренно закрыт разработчиком). Запусти start_server.bat — всё оживёт.</p></details>
-    <details><summary>Это бесплатно?</summary><p>Полностью. Модели open-source и работают на твоём железе. Никаких подписок и отправки данных в облако.</p></details>
-  </div>
-</section>
-
-<section class="final">
-  <h2>Готов попробовать?</h2>
-  <p class="lead" style="margin: 14px auto 0;">Выбирай любой способ — везде один и тот же умный ИИ.</p>
-  <div class="cta">
-    <a class="btn btn-tg" href="https://t.me/local_ai_pk_bot" target="_blank">✈️ Открыть бота</a>
-    <a class="btn btn-apk" href="AI-Chat.apk" download>📱 Скачать APK</a>
-    <a class="btn btn-exe" href="AI-Chat-Setup.exe" download>🖥️ Скачать для ПК</a>
-  </div>
-</section>
-
-<footer>Created by <b style="color:var(--accent2)">CatCode</b> © Все права защищены · локальные модели Qwen и Gemma 2 · вопросы: <a href="mailto:juravlev.aleksandr2020@gmail.com" style="color:var(--dim)">juravlev.aleksandr2020@gmail.com</a></footer>
-
-<footer class="ouri-network" aria-label="Экосистема OuRi">
-  <style>
-    .ouri-network{margin:28px auto 0;padding:20px 22px;max-width:1180px;border:1px solid rgba(150,150,150,.22);border-radius:18px;background:rgba(128,128,128,.055);color:inherit;font:inherit}
-    .ouri-network__top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
-    .ouri-network__title{font-weight:750}.ouri-network__sub{opacity:.68;font-size:.88em}
-    .ouri-network__links{display:flex;gap:8px;flex-wrap:wrap}
-    .ouri-network__links a{display:inline-flex;align-items:center;padding:8px 11px;border:1px solid rgba(150,150,150,.24);border-radius:10px;text-decoration:none;color:inherit;font-size:.9em;transition:transform .18s ease,border-color .18s ease,background .18s ease}
-    .ouri-network__links a:hover{transform:translateY(-2px);border-color:rgba(150,150,150,.58);background:rgba(128,128,128,.1)}
-    @media(prefers-reduced-motion:reduce){.ouri-network__links a{transition:none}.ouri-network__links a:hover{transform:none}}
-  </style>
-  <div class="ouri-network__top"><span class="ouri-network__title">OuRi · единая экосистема</span><span class="ouri-network__sub">Связанные продукты и исходный код</span></div>
-  <nav class="ouri-network__links" aria-label="Другие проекты OuRi">
-    <a href="https://spaj7468-cell.github.io/ouri-corp/">OuRi Corp</a>
-    <a href="https://spaj7468-cell.github.io/qkc/">QKC</a>
-    <a href="https://spaj7468-cell.github.io/qkccode/">QKCcode</a>
-    <a href="https://spaj7468-cell.github.io/qkc-engine/">QKC Engine</a>
-    <a href="https://spaj7468-cell.github.io/Arakul/">Arakul Studio</a>
-    <a href="https://github.com/spaj7468-cell" target="_blank" rel="noopener noreferrer">Все репозитории ↗</a>
-  </nav>
 </footer>
 
+<footer class="ouri-network" aria-label="Экосистема OuRi">
+  <div class="wrap ouri-network__in">
+    <div class="ouri-network__top">
+      <span class="ouri-network__title">OuRi · единая экосистема</span>
+      <span class="ouri-network__sub muted sm">Связанные продукты и исходный код</span>
+    </div>
+    <nav class="ouri-network__links" aria-label="Другие проекты OuRi">
+      <a href="https://spaj7468-cell.github.io/ouri-corp/">OuRi Corp</a>
+      <a href="https://spaj7468-cell.github.io/qkc/">QKC</a>
+      <a href="https://spaj7468-cell.github.io/qkccode/">QKCcode</a>
+      <a href="https://spaj7468-cell.github.io/qkc-engine/">QKC Engine</a>
+      <a href="https://spaj7468-cell.github.io/Arakul/">Arakul Studio</a>
+      <a href="https://github.com/spaj7468-cell" target="_blank" rel="noopener noreferrer">Все репозитории ↗</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="js/qkc-core.js" defer></script>
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
 </body>
 </html>
