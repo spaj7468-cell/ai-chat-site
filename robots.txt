@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /AI-Chat-Setup.exe
+Disallow: /AI-Chat.apk
+Sitemap: https://spaj7468-cell.github.io/ai-chat-site/sitemap.xml
