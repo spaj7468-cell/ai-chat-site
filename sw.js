@@ -2,7 +2,7 @@
 var CACHE = 'aichat-v1';
 var CORE = ['./', './index.html', './css/qkc-core.css', './css/site.css', './js/qkc-core.js',
             './manifest.webmanifest', './assets/favicon.png', './assets/icon-192.png',
-            './img/logo.png', './img/app1.jpg', './img/app2.jpg', './img/app3.jpg', './img/app4.jpg', './img/tg1.jpg', './img/tg2.jpg'];
+            './assets/ouri-avatar-512.png', './assets/ouri-avatar-192.png', './img/app1.jpg', './img/app2.jpg', './img/app3.jpg', './img/app4.jpg', './img/tg1.jpg', './img/tg2.jpg'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }).then(function () { return self.skipWaiting(); }));
 });
